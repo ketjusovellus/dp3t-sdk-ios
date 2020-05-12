@@ -75,12 +75,13 @@ import SQLite
 
         func log(type: LogType, message: String) throws -> LogEntry {
             let timestamp = Date()
-            let insert = table.insert(
-                timestampColumn <- timestamp.millisecondsSince1970,
-                typeColumn <- type.rawValue,
-                messageColumn <- message
-            )
-            try database.run(insert)
+            // NOTE: Disable excessive logging into database for now
+            //let insert = table.insert(
+            //    timestampColumn <- timestamp.millisecondsSince1970,
+            //    typeColumn <- type.rawValue,
+            //    messageColumn <- message
+            //)
+            //try database.run(insert)
             return LogEntry(id: 0, timestamp: timestamp, type: type, message: message)
         }
 

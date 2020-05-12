@@ -13,6 +13,14 @@ struct Contact {
     let date: Date
     let windowCount: Int
     let associatedKnownCase: Int?
+#if CALIBRATION
+    let ketjuUserPrefix: String
+    let ketjuStartDate: Date
+    let ketjuEndDate: Date
+    let ketjuMinutes: Int
+    let ketjuMeanAttenuation: Double
+    let ketjuMeanDistance: Double
+#endif
 }
 
 extension Contact: Equatable {}

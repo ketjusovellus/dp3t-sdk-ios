@@ -21,6 +21,14 @@ class ContactsStorage {
     let ephIDColumn = Expression<EphID>("ephID")
     let windowCountColumn = Expression<Int>("windowsCount")
     let associatedKnownCaseColumn = Expression<Int?>("associated_known_case")
+#if CALIBRATION
+    let ketjuUserPrefixColumn = Expression<String>("ketjuUserPrefix")
+    let ketjuStartDateColumn = Expression<Int64>("ketjuStartDate")
+    let ketjuEndDateColumn = Expression<Int64>("ketjuEndDate")
+    let ketjuMinutes = Expression<Int>("ketjuMinutes")
+    let ketjuMeanAttenuation = Expression<Double>("ketjuMeanAttenuation")
+    let ketjuMeanDistance = Expression<Double>("ketjuMeanDistance")
+#endif
 
     /// Initializer
     /// - Parameters:
@@ -39,6 +47,14 @@ class ContactsStorage {
             t.column(ephIDColumn)
             t.column(associatedKnownCaseColumn)
             t.column(windowCountColumn)
+#if CALIBRATION
+            t.column(ketjuUserPrefixColumn)
+            t.column(ketjuStartDateColumn)
+            t.column(ketjuEndDateColumn)
+            t.column(ketjuMinutes)
+            t.column(ketjuMeanAttenuation)
+            t.column(ketjuMeanDistance)
+#endif
             t.foreignKey(associatedKnownCaseColumn, references: knownCasesStorage.table, knownCasesStorage.idColumn, delete: .setNull)
             t.unique(dateColumn, ephIDColumn)
         })
@@ -52,12 +68,26 @@ class ContactsStorage {
     /// add a Contact
     /// - Parameter contact: the Contact to add
     func add(contact: Contact) {
+#if CALIBRATION
         let insert = table.insert(
             dateColumn <- contact.date.millisecondsSince1970,
             ephIDColumn <- contact.ephID,
             windowCountColumn <- contact.windowCount,
-            associatedKnownCaseColumn <- contact.associatedKnownCase
-        )
+            associatedKnownCaseColumn <- contact.associatedKnownCase,
+            ketjuUserPrefixColumn <- contact.ketjuUserPrefix,
+            ketjuStartDateColumn <- contact.ketjuStartDate.millisecondsSince1970,
+            ketjuEndDateColumn <- contact.ketjuEndDate.millisecondsSince1970,
+            ketjuMinutes <- contact.ketjuMinutes,
+            ketjuMeanAttenuation <- contact.ketjuMeanAttenuation,
+            ketjuMeanDistance <- contact.ketjuMeanDistance)
+#else
+        let insert = table.insert(
+            dateColumn <- contact.date.millisecondsSince1970,
+            ephIDColumn <- contact.ephID,
+            windowCountColumn <- contact.windowCount,
+            associatedKnownCaseColumn <- contact.associatedKnownCase)
+#endif
+
         // can fail if contact already exists
         _ = try? database.run(insert)
     }
@@ -85,11 +115,25 @@ class ContactsStorage {
         let query = table.filter(associatedKnownCaseColumn != nil)
         var contacts: [Contact] = []
         for row in try database.prepare(query) {
+#if CALIBRATION
+            let model = Contact(identifier: row[idColumn],
+                                ephID: row[ephIDColumn],
+                                date: Date(milliseconds: row[dateColumn]),
+                                windowCount: row[windowCountColumn],
+                                associatedKnownCase: row[associatedKnownCaseColumn],
+                                ketjuUserPrefix: row[ketjuUserPrefixColumn],
+                                ketjuStartDate: Date(milliseconds: row[ketjuStartDateColumn]),
+                                ketjuEndDate: Date(milliseconds: row[ketjuEndDateColumn]),
+                                ketjuMinutes: row[ketjuMinutes],
+                                ketjuMeanAttenuation: row[ketjuMeanAttenuation],
+                                ketjuMeanDistance: row[ketjuMeanDistance])
+#else
             let model = Contact(identifier: row[idColumn],
                                 ephID: row[ephIDColumn],
                                 date: Date(milliseconds: row[dateColumn]),
                                 windowCount: row[windowCountColumn],
                                 associatedKnownCase: row[associatedKnownCaseColumn])
+#endif
             contacts.append(model)
         }
         return contacts
@@ -118,11 +162,25 @@ class ContactsStorage {
         var contacts = [Contact]()
         for row in try database.prepare(query) {
             guard row[associatedKnownCaseColumn] == nil else { continue }
+#if CALIBRATION
+            let model = Contact(identifier: row[idColumn],
+                                ephID: row[ephIDColumn],
+                                date: Date(milliseconds: row[dateColumn]),
+                                windowCount: row[windowCountColumn],
+                                associatedKnownCase: row[associatedKnownCaseColumn],
+                                ketjuUserPrefix: row[ketjuUserPrefixColumn],
+                                ketjuStartDate: Date(milliseconds: row[ketjuStartDateColumn]),
+                                ketjuEndDate: Date(milliseconds: row[ketjuEndDateColumn]),
+                                ketjuMinutes: row[ketjuMinutes],
+                                ketjuMeanAttenuation: row[ketjuMeanAttenuation],
+                                ketjuMeanDistance: row[ketjuMeanDistance])
+#else
             let model = Contact(identifier: row[idColumn],
                                 ephID: row[ephIDColumn],
                                 date: Date(milliseconds: row[dateColumn]),
                                 windowCount: row[windowCountColumn],
                                 associatedKnownCase: row[associatedKnownCaseColumn])
+#endif
             contacts.append(model)
         }
 

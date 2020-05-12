@@ -21,6 +21,10 @@ class HandshakesStorage {
     let ephIDColumn = Expression<EphID>("ephID")
     let TXPowerlevelColumn = Expression<Double?>("tx_power_level")
     let RSSIColumn = Expression<Double?>("rssi")
+#if CALIBRATION
+    let ketjuUserPrefixColumn = Expression<String>("ketjuUserPrefix")
+    let ketjuDistanceColumn = Expression<Double>("ketjuDistance")
+#endif
 
     /// Initializer
     /// - Parameters:
@@ -39,6 +43,10 @@ class HandshakesStorage {
             t.column(ephIDColumn)
             t.column(TXPowerlevelColumn)
             t.column(RSSIColumn)
+#if CALIBRATION
+            t.column(ketjuUserPrefixColumn)
+            t.column(ketjuDistanceColumn)
+#endif
         })
     }
 
@@ -50,12 +58,23 @@ class HandshakesStorage {
     /// add a Handshake
     /// - Parameter h: handshake
     func add(handshake h: HandshakeModel) throws {
+#if CALIBRATION
+        let insert = table.insert(
+            timestampColumn <- h.timestamp.millisecondsSince1970,
+            ephIDColumn <- h.ephID,
+            TXPowerlevelColumn <- h.TXPowerlevel,
+            RSSIColumn <- h.RSSI,
+            ketjuUserPrefixColumn <- h.ketjuUserPrefix,
+            ketjuDistanceColumn <- h.ketjuDistance
+        )
+#else
         let insert = table.insert(
             timestampColumn <- h.timestamp.millisecondsSince1970,
             ephIDColumn <- h.ephID,
             TXPowerlevelColumn <- h.TXPowerlevel,
             RSSIColumn <- h.RSSI
         )
+#endif
         try database.run(insert)
     }
 
@@ -82,11 +101,21 @@ class HandshakesStorage {
     func getAll(olderThan date: Date = Date()) throws -> [HandshakeModel] {
         var handshakes = [HandshakeModel]()
         for row in try database.prepare(table.filter(timestampColumn < date.millisecondsSince1970)) {
+#if CALIBRATION
+            let model = HandshakeModel(identifier: row[idColumn],
+                                       timestamp: Date(milliseconds: row[timestampColumn]),
+                                       ephID: row[ephIDColumn],
+                                       TXPowerlevel: row[TXPowerlevelColumn],
+                                       RSSI: row[RSSIColumn],
+                                       ketjuUserPrefix: row[ketjuUserPrefixColumn],
+                                       ketjuDistance: row[ketjuDistanceColumn])
+#else
             let model = HandshakeModel(identifier: row[idColumn],
                                        timestamp: Date(milliseconds: row[timestampColumn]),
                                        ephID: row[ephIDColumn],
                                        TXPowerlevel: row[TXPowerlevelColumn],
                                        RSSI: row[RSSIColumn])
+#endif
             handshakes.append(model)
         }
         return handshakes
@@ -128,7 +157,9 @@ class HandshakesStorage {
                 let model = HandshakeModel(timestamp: Date(milliseconds: row[timestampColumn]),
                                            ephID: row[ephIDColumn],
                                            TXPowerlevel: row[TXPowerlevelColumn],
-                                           RSSI: row[RSSIColumn])
+                                           RSSI: row[RSSIColumn],
+                                           ketjuUserPrefix: row[ketjuUserPrefixColumn],
+                                           ketjuDistance: row[ketjuDistanceColumn])
                 handshakes.append(model)
             }
 

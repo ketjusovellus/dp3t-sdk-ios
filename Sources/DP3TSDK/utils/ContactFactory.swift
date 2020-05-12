@@ -45,6 +45,12 @@ enum ContactFactory {
 
             var numberOfMatchingWindows = 0
 
+#if CALIBRATION
+            var ketjuStartDate = epochStart
+            var ketjuEndDate = epochStart
+            var ketjuMeans = [Double]()
+#endif
+
             for windowIndex in 0 ..< windowLength {
                 let start = epochStart.addingTimeInterval(Double(windowIndex) * parameters.windowDuration)
                 let end = start.addingTimeInterval(parameters.windowDuration)
@@ -59,17 +65,46 @@ enum ContactFactory {
 
                 if windowMean < parameters.contactAttenuationThreshold {
                     numberOfMatchingWindows += 1
+
+#if CALIBRATION
+                    if numberOfMatchingWindows == 1 {
+                        ketjuStartDate = start
+                    }
+                    ketjuEndDate = end
+                    ketjuMeans.append(windowMean)
+#endif
                 }
             }
+
+#if CALIBRATION
+            let ketjuUserPrefix = String(data: ephID.prefix(4), encoding: .utf8) ?? ""
+            let ketjuMinutes = numberOfMatchingWindows * Int(parameters.windowDuration) / 60
+            let ketjuMeanAttenuation = ketjuMeans.reduce(0.0, +) / Double(ketjuMeans.count)
+            let ketjuMeanDistance = pow(10, ketjuMeanAttenuation / 20) / 1000
+#endif
 
             if numberOfMatchingWindows != 0 {
                 let timestamp = firstValue.0.timeIntervalSince1970
                 let bucketTimestamp = timestamp - timestamp.truncatingRemainder(dividingBy: Default.shared.parameters.networking.batchLength)
+#if CALIBRATION
+                return Contact(identifier: nil,
+                               ephID: ephID,
+                               date: Date(timeIntervalSince1970: bucketTimestamp),
+                               windowCount: numberOfMatchingWindows,
+                               associatedKnownCase: nil,
+                               ketjuUserPrefix: ketjuUserPrefix,
+                               ketjuStartDate: ketjuStartDate,
+                               ketjuEndDate: ketjuEndDate,
+                               ketjuMinutes: ketjuMinutes,
+                               ketjuMeanAttenuation: ketjuMeanAttenuation,
+                               ketjuMeanDistance: ketjuMeanDistance)
+#else
                 return Contact(identifier: nil,
                                ephID: ephID,
                                date: Date(timeIntervalSince1970: bucketTimestamp),
                                windowCount: numberOfMatchingWindows,
                                associatedKnownCase: nil)
+#endif
             }
 
             return nil

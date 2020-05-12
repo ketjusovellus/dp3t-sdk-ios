@@ -101,10 +101,21 @@ class DP3TMatcher: DP3TMatcherProtocol {
 extension DP3TMatcher: BluetoothDiscoveryDelegate {
     func didDiscover(data: EphID, TXPowerlevel: Double?, RSSI: Double, timestamp: Date) throws {
         // Do no realtime matching
+#if CALIBRATION
+        let ketjuUserPrefix = String(data: data.prefix(4), encoding: .utf8) ?? ""
+        let ketjuDistance = pow(10, ((TXPowerlevel ?? Default.shared.parameters.contactMatching.defaultTxPowerLevel) - RSSI) / 20) / 1000
+        let handshake = HandshakeModel(timestamp: timestamp,
+                                       ephID: data,
+                                       TXPowerlevel: TXPowerlevel,
+                                       RSSI: RSSI,
+                                       ketjuUserPrefix: ketjuUserPrefix,
+                                       ketjuDistance: ketjuDistance)
+#else
         let handshake = HandshakeModel(timestamp: timestamp,
                                        ephID: data,
                                        TXPowerlevel: TXPowerlevel,
                                        RSSI: RSSI)
+#endif
         try database.handshakesStorage.add(handshake: handshake)
 
         delegate.handShakeAdded(handshake)

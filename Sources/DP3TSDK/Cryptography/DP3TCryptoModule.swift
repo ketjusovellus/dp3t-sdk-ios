@@ -168,8 +168,24 @@ class DP3TCryptoModule {
             // check all handshakes if they match any of the ephIDs
             // make sure that all contact date is before bucket date
             for contact in contactsOnDay where bucketDate >= contact.date {
-                if ephIDs.contains(contact.ephID) {
-                    matchingContacts.append(contact)
+                var contactEphID = contact.ephID
+
+                #if CALIBRATION
+                    // ignore first 4 bytes in comparison of ephIDs in calibration mode
+                    // as those might be overwritten by custom prefix identifier over Bluetooth
+                    contactEphID = contactEphID.dropFirst(4)
+                #endif
+
+                for ephID in ephIDs {
+                    var secretKeyEphID = ephID
+
+                    #if CALIBRATION
+                        secretKeyEphID = secretKeyEphID.dropFirst(4)
+                    #endif
+
+                    if contactEphID == secretKeyEphID {
+                        matchingContacts.append(contact)
+                    }
                 }
             }
 

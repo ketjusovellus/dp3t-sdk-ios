@@ -19,6 +19,11 @@ public struct HandshakeModel {
     /// The RSSI of both handshaking parties
     public let RSSI: Double?
 
+#if CALIBRATION
+    public let ketjuUserPrefix: String
+    public let ketjuDistance: Double
+#endif
+
     // iOS sends at 12bm? Android seems to vary between -1dbm (HIGH_POWER) and -21dbm (LOW_POWER)
     private let defaultPower = 12.0
 
